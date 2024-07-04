@@ -4,18 +4,19 @@ from PIL import Image
 input_file = "color.txt"
 output_dir = "output"
 base_size = 128
+keep_main_color_percent = 0.4
 row_pixel = 4
 total_row = int(base_size / row_pixel)
 
 patterns = [
     # latin square, generate by sodoku solver
-    [0, 1, 2, 3, 4],
-    [1, 4, 0, 2, 3],
-    [3, 0, 4, 1, 2],
-    [4, 2, 3, 0, 1],
+    [0, 1, 2],
+    [1, 4, 0],
+    [2, 3, 1],
+    [3, 0, 4],
+    [4, 2, 3],
 ]
-
-segments = [[0.2, 0.2, 0.2, 0.2]]
+segments = [[0.34, 0.33]]
 color_palettes = []
 
 for i in range(len(segments)):
@@ -50,8 +51,10 @@ def getGradientImage(gradient_range) -> Image:
         cur_range = gradient_pair[2]
         if i < len(gradient_range) - 1:
             cur_range += 1
-        gradient = gradient_pair[0].range_to(gradient_pair[1], cur_range)
+        keep_range = int(cur_range * keep_main_color_percent)
+        gradient = gradient_pair[0].range_to(gradient_pair[1], cur_range - keep_range)
         new_color = list(map(colorToRGB, gradient))
+        new_color += [new_color[-1]] * (keep_range - 1)
         if i < len(gradient_range) - 1:
             new_color.pop()
         all_color += new_color
@@ -91,24 +94,25 @@ palette_generated = list(
 )
 print("total palette", len(palette_generated))
 print("total image", len(palette_generated) / total_row)
-base = Image.new("RGB", (base_size, base_size), (0, 0, 0))
-i_image = 0
-for palette in palette_generated:
-    a = generateColorGradientRange(palette)
-    for value in a:
-        image = getGradientImage(value)
-        row = i_image % total_row
-        for offset in range(row_pixel):
-            base.paste(image, (0, row * row_pixel + offset))
-        if row >= total_row - 1:
-            save_name = f"{output_dir}/gradient_map{int(i_image / total_row)}.png"
-            print(save_name)
-            base.save(save_name)
-            base.close()
-            base = Image.new("RGB", (base_size, base_size), (0, 0, 0))
-        image.close()
-        i_image += 1
-
-save_name = f"{output_dir}/gradient_map{int(i_image / total_row)}.png"
-print(save_name)
-base.save(save_name)
+# base = Image.new("RGB", (base_size, base_size), (0, 0, 0))
+# i_image = 0
+# for palette in palette_generated:
+#     a = generateColorGradientRange(palette)
+#     for value in a:
+#         image = getGradientImage(value)
+#         row = i_image % total_row
+#         for offset in range(row_pixel):
+#             base.paste(image, (0, row * row_pixel + offset))
+#         if row >= total_row - 1:
+#             save_name = f"{output_dir}/gradient_map{int(i_image / total_row)}.png"
+#             print(save_name)
+#             base.save(save_name)
+#             base.close()
+#             base = Image.new("RGB", (base_size, base_size), (0, 0, 0))
+#         image.close()
+#         i_image += 1
+print(len(palette_generated) % total_row)
+# if len(palette_generated) % total_row > 0:
+#     save_name = f"{output_dir}/gradient_map{int(i_image / total_row)}.png"
+#     print(save_name)
+#     base.save(save_name)
